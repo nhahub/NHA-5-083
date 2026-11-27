@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "pkief.material-icon-theme",
+        "astral-sh.ruff",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.mypy-type-checker",
+        "sonarsource.sonarlint-vscode"
+    ]
+}

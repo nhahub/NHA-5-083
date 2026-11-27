@@ -1,0 +1,10 @@
+# Pinned ETL pipeline dependencies (Python >= 3.12)
+# Airflow 3.x is installed in its own isolated Airflow runtime / container.
+pandas>=2.2.0,<3.2.0
+pymysql>=1.1.0,<2.0.0
+cryptography>=42.0.0,<47.0.0
+pydantic>=2.7.0,<3.0.0
+pydantic-settings>=2.3.0,<3.0.0
+kaggle>=1.6.14,<2.0.0
+six>=1.16.0,<2.0.0
+azure-storage-blob>=12.20.0,<13.0.0

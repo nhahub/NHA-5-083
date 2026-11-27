@@ -1,0 +1,16 @@
+FROM apache/airflow:3.0.2-python3.12
+
+USER airflow
+
+COPY --chown=airflow:root pipeline/requirements.txt /tmp/pipeline-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/pipeline-requirements.txt \
+    apache-airflow-providers-mysql \
+    apache-airflow-providers-microsoft-azure
+
+COPY --chown=airflow:root config/settings.toml config/cuisine_map.csv /opt/airflow/app/config/
+COPY --chown=airflow:root sql/002_create_gold_views.sql /opt/airflow/app/sql/002_create_gold_views.sql
+COPY --chown=airflow:root pipeline /opt/airflow/app/pipeline
+
+RUN mkdir -p /opt/airflow/app/data/bronze /opt/airflow/app/data/quarantine /opt/airflow/app/data/reports /opt/airflow/app/logs
+
+ENV PYTHONPATH=/opt/airflow/app

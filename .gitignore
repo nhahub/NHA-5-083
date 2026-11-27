@@ -1,0 +1,85 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Python tooling and test output
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pytype/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.hypothesis/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# Airflow and local pipeline output
+airflow.cfg
+airflow.db
+airflow-webserver.pid
+logs/
+airflow/logs/
+data/bronze/
+data/raw/
+data/processed/
+data/quarantine/
+data/reports/
+data/*.parquet
+data/*.jsonl
+*.sql.gz
+*.dump
+
+# Streamlit local secrets
+web/streamlit/.streamlit/secrets.toml
+
+# Local databases and application logs
+*.sqlite
+*.sqlite3
+*.db
+*.log
+
+# Docker and local development overrides
+docker-compose.override.yml
+
+# IDE and operating-system files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Agent skills temporary files
+.agents/**/__pycache__/
+.agents/**/*.pyc

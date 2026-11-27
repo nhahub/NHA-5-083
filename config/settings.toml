@@ -1,0 +1,71 @@
+# =============================================================================
+# EatoSphere: non-secret application settings
+# =============================================================================
+# Single source of truth for portable, non-secret tunables shared across the
+# ETL pipeline, Airflow DAGs, FastAPI backend, and Streamlit app.
+#
+# Rules (see docs/SECRETS.md):
+# - Never place secrets or environment-specific endpoints here (use .env /
+#   environment variables catalogued in .env.example).
+# - Any `[section] key` below can be overridden via environment variable
+#   `SECTION_KEY` (e.g., NLP_TIMEOUT_SECONDS=8).
+# =============================================================================
+
+[logging]
+level = "INFO"
+format = "json"              # structured JSON logs (docs/ARCHITECTURE.md)
+query_max_chars = 220        # user NLP text is truncated to this length in logs
+
+[quality]
+max_quarantine_rate = 0.15   # quality gate (docs/DATA_QUALITY_RULES.md)
+rating_min = 0.0
+rating_max = 5.0
+price_range_min = 1
+price_range_max = 4
+latitude_abs_max = 90.0
+longitude_abs_max = 180.0
+
+[freshness]
+gold_max_age_days = 7        # older data shows a staleness notice in the app
+
+[pipeline]
+bronze_local_path = "data/bronze"
+quarantine_path = "data/quarantine"
+reports_path = "data/reports"
+logs_path = "logs"
+bronze_container = "bronze"
+
+[database]
+connect_timeout_seconds = 15
+
+[sources.zomato]
+kaggle_dataset = "shrutimehta/zomato-restaurants-data"
+schedule = "@weekly"
+skip_if_unchanged = true
+file_name = "zomato.csv"
+file_encoding = "latin-1"                                 # confirm (docs/DATA_SOURCES.md, DS-2)
+
+[nlp]
+model_id = "Qwen/Qwen3-32B"
+provider = "auto"
+semantic_model_id = "sentence-transformers/all-MiniLM-L6-v2"
+semantic_enabled = true
+semantic_cuisine_threshold = 0.48
+semantic_price_threshold = 0.44
+timeout_seconds = 5
+max_input_chars = 500
+max_output_tokens = 256
+temperature = 0
+cache_max_entries = 1000
+cache_ttl_seconds = 3600
+
+[backend]
+nlp_rate_limit_per_minute = 30
+page_default_limit = 20
+page_max_limit = 100
+allow_csv_fallback_in_local = true
+local_fallback_csv_path = "data/zomato.csv"
+
+[streamlit]
+api_timeout_seconds = 10
+cache_ttl_seconds = 300

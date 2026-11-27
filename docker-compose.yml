@@ -1,0 +1,166 @@
+networks:
+  explorer-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  airflow_pg_data:
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    networks:
+      - explorer-net
+    ports:
+      - "${MYSQL_HOST_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-global_restaurant_explorer}
+      MYSQL_PIPELINE_USER: ${MYSQL_PIPELINE_USER}
+      MYSQL_PIPELINE_PASSWORD: ${MYSQL_PIPELINE_PASSWORD}
+      MYSQL_APP_USER: ${MYSQL_APP_USER}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/001_create_tables.sql:/docker-entrypoint-initdb.d/001_create_tables.sql:ro
+      - ./sql/002_create_gold_views.sql:/docker-entrypoint-initdb.d/002_create_gold_views.sql:ro
+      - ./docker/mysql/003_create_users.sh:/docker-entrypoint-initdb.d/003_create_users.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+
+  pipeline:
+    build:
+      context: .
+      dockerfile: pipeline/Dockerfile
+    profiles: ["tools"]
+    networks:
+      - explorer-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-global_restaurant_explorer}
+      MYSQL_TLS_ENABLED: "FALSE"
+      MYSQL_PIPELINE_USER: ${MYSQL_PIPELINE_USER}
+      MYSQL_PIPELINE_PASSWORD: ${MYSQL_PIPELINE_PASSWORD}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      AZURE_STORAGE_ACCOUNT_URL: ${AZURE_STORAGE_ACCOUNT_URL:-}
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING:-}
+      KAGGLE_USERNAME: ${KAGGLE_USERNAME}
+      KAGGLE_KEY: ${KAGGLE_KEY}
+      FX_RATE_API_KEY: ${FX_RATE_API_KEY:-}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+  backend:
+    build:
+      context: .
+      dockerfile: web/backend/Dockerfile
+    restart: unless-stopped
+    networks:
+      - explorer-net
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-global_restaurant_explorer}
+      MYSQL_TLS_ENABLED: "FALSE"
+      MYSQL_APP_USER: ${MYSQL_APP_USER}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD}
+      HF_API_KEY: ${HF_API_KEY}
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: "8000"
+      BACKEND_CORS_ORIGINS: http://localhost:8501,http://127.0.0.1:8501
+      BACKEND_ALLOW_CSV_FALLBACK_IN_LOCAL: "false"
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: web/streamlit/Dockerfile
+    restart: unless-stopped
+    networks:
+      - explorer-net
+    ports:
+      - "8501:8501"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      STREAMLIT_BACKEND_URL: http://backend:8000
+
+  airflow-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    networks:
+      - explorer-net
+    environment:
+      POSTGRES_USER: ${AIRFLOW_PG_USER:-airflow}
+      POSTGRES_PASSWORD: ${AIRFLOW_PG_PASSWORD}
+      POSTGRES_DB: ${AIRFLOW_PG_DB:-airflow}
+    volumes:
+      - airflow_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  airflow:
+    build:
+      context: .
+      dockerfile: pipeline/Dockerfile.airflow
+    restart: unless-stopped
+    command: ["airflow", "standalone"]
+    networks:
+      - explorer-net
+    ports:
+      - "8080:8080"
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/app/pipeline/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET}
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_PG_USER:-airflow}:${AIRFLOW_PG_PASSWORD}@airflow-postgres:5432/${AIRFLOW_PG_DB:-airflow}
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true"
+      AIRFLOW_CONN_MYSQL_PIPELINE: '{"conn_type": "mysql", "host": "mysql", "port": 3306, "schema": "${MYSQL_DATABASE:-global_restaurant_explorer}", "login": "${MYSQL_PIPELINE_USER}", "password": "${MYSQL_PIPELINE_PASSWORD}"}'
+      AIRFLOW_CONN_AZURE_BLOB_BRONZE: '{"conn_type": "wasb", "extra": {"connection_string": "${AZURE_STORAGE_CONNECTION_STRING:-}"}}'
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-global_restaurant_explorer}
+      MYSQL_TLS_ENABLED: "FALSE"
+      MYSQL_PIPELINE_USER: ${MYSQL_PIPELINE_USER}
+      MYSQL_PIPELINE_PASSWORD: ${MYSQL_PIPELINE_PASSWORD}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+      KAGGLE_USERNAME: ${KAGGLE_USERNAME}
+      KAGGLE_KEY: ${KAGGLE_KEY}
+      FX_RATE_API_KEY: ${FX_RATE_API_KEY:-}
+    volumes:
+      - ./data:/opt/airflow/app/data
+      - ./logs:/opt/airflow/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/v2/monitor/health', timeout=5)"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
