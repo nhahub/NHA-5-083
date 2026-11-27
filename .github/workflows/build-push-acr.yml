@@ -17,7 +17,8 @@
 #     `AcrPush` on ACR, and `Contributor` on the target resource group).
 #   - Required Repository Secrets (3 identifiers only — zero passwords/keys):
 #       AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
-#   - Optional Repository Variables (for forks with custom resource names):
+#   - Optional Repository Variables (for forks or repos enabling auto-CD):
+#       ENABLE_AZURE_CD (set to `true` to enable automatic push-triggered builds/deploys)
 #       ACR_NAME (default: acreatosphere2611)
 #       AZURE_RESOURCE_GROUP (default: rg-eatosphere-prod)
 #   - Runtime Secret Isolation: Updating `--image` never passes or exposes
@@ -54,7 +55,7 @@ jobs:
   build-and-push:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.repository == 'Ziad17-Ai/Global-Restaurant-Explorer-'
+      vars.ENABLE_AZURE_CD == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -101,7 +102,7 @@ jobs:
   deploy:
     needs: build-and-push
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Ziad17-Ai/Global-Restaurant-Explorer-') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.ENABLE_AZURE_CD == 'true') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy_to_azure == true)
     runs-on: ubuntu-latest
     env:

@@ -1,7 +1,7 @@
 # Global Restaurant Explorer (EatoSphere)
 
 > **Status:** Increment 1 Complete (v1.0) · **Last updated:** 2026-11-26  
-> **Repository:** <https://github.com/Ziad17-Ai/Global-Restaurant-Explorer-> (Academy ref: <https://github.com/nhahub/NHA-5-083>)
+> **Repository:** <https://github.com/nhahub/NHA-5-083>
 
 ## 1. What is this?
 
@@ -53,6 +53,7 @@ Execution and deployment instructions are separated into two dedicated runbooks:
 | Testing & CI quality gates | [`docs/TESTING.md`](docs/TESTING.md), [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 | Local execution runbook | [`docs/RUN_LOCAL.md`](docs/RUN_LOCAL.md) |
 | Azure production deployment runbook | [`docs/DEPLOY_AZURE.md`](docs/DEPLOY_AZURE.md) |
+| **Compiled PDF deliverables & infographics** | [`docs/pdfs/system-analysis-and-design.pdf`](docs/pdfs/system-analysis-and-design.pdf), [`docs/pdfs/EatoSphere_DEPI_Roadmap_Infographic.pdf`](docs/pdfs/EatoSphere_DEPI_Roadmap_Infographic.pdf) |
 
 ---
 
@@ -135,6 +136,7 @@ Secrets arrive strictly via OS environment variables (`.env` locally, Azure Key 
 ├── docker/
 │   └── mysql/                 (local Docker MySQL init scripts)
 ├── docs/
+│   ├── pdfs/                  (compiled PDF deliverables, reports & infographics)
 │   ├── RUN_LOCAL.md           (local Docker Compose & Python runbook)
 │   ├── DEPLOY_AZURE.md        (Azure production deployment & troubleshooting runbook)
 │   ├── TESTING.md             (testing strategy, quality gates, and E2E checklist)
