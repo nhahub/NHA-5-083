@@ -52,6 +52,9 @@ permissions:
 
 jobs:
   build-and-push:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.repository == 'Ziad17-Ai/Global-Restaurant-Explorer-'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -98,7 +101,7 @@ jobs:
   deploy:
     needs: build-and-push
     if: >-
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Ziad17-Ai/Global-Restaurant-Explorer-') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy_to_azure == true)
     runs-on: ubuntu-latest
     env:
